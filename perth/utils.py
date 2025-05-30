@@ -180,7 +180,11 @@ def calculate_audio_metrics(original: np.ndarray, watermarked: np.ndarray) -> Di
         - psnr: Peak Signal-to-Noise Ratio (dB)
     """
     if len(original) != len(watermarked):
-        raise ValueError("Original and watermarked audio must have the same length")
+        print(f"Original and watermarked audio don't have the same length {len(original)} != {len(watermarked)}")
+        min_len = min(len(original), len(watermarked))
+        original = original[:min_len]
+        watermarked = watermarked[:min_len]
+
     
     # Calculate Mean Squared Error
     mse = np.mean((original - watermarked) ** 2)

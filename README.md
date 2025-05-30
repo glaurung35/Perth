@@ -81,6 +81,32 @@ watermark = watermarker.get_watermark(watermarked_audio, sample_rate=sr)
 print(f"Extracted watermark: {watermark}")
 ```
 
+#### Removing a Watermark
+
+```python
+import perth
+import librosa
+
+# Load the watermarked audio
+watermarked_audio, sr = librosa.load("output.wav", sr=None)
+
+# Initialize watermarker (same as used for embedding)
+watermarker = perth.PerthImplicitWatermarker()
+
+# Remove watermark
+clean_audio = watermarker.remove_watermark(watermarked_audio, sample_rate=sr)
+print(f"Extracted watermark: {watermark}")
+
+# Save clean audio
+sf.write("clean.wav", clean_audio, sr)
+
+# Check detection fails
+watermark = watermarker.get_watermark(watermarked_audio, sample_rate=sr)
+print(f"Extracted watermark (input): {watermark}")
+watermark = watermarker.get_watermark(clean_audio, sample_rate=sr)
+print(f"Extracted watermark (output): {watermark}")
+```
+
 ### Perth Implicit Watermarker
 
 The Perth-Net Implicit watermarker uses a neural network-based approach for embedding and extracting watermarks. It's designed to be robust against various audio manipulations while maintaining high audio quality.

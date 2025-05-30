@@ -31,6 +31,10 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
                         help="Watermarking method to use")
     parser.add_argument("--extract", "-e", action="store_true",
                         help="Extract watermark from the input file instead of applying a watermark")
+    parser.add_argument("--remove", "-r", action="store_true",
+                        help="Remove watermark from the input file instead of applying a watermark")
+    parser.add_argument("--compare", "-C", action="store_true",
+                        help="Compare input and output")
     parser.add_argument("--device", "-d", choices=["cpu", "cuda"],
                         help="Device to use for neural network processing")
     parser.add_argument("--config", "-c", 
@@ -83,18 +87,34 @@ def main(args: Optional[List[str]] = None) -> int:
             print(f"Extracted watermark: {watermark}")
             print(f"Watermark confidence: {np.mean(watermark):.4f}")
             return 0
+        elif parsed_args.compare:
+            # Compare input and output
+            print("Comparing...")
+            original_audio = wav
+            watermarked_audio, sr2 = load_audio(parsed_args.output)
+            if sr2 != sr:
+                raise ValueError(f"Sampling rates do not match {sr} != {sr2}")
         else:
-            # Apply watermark
-            print("Applying watermark...")
             original_audio = wav.copy()  # Save original for comparison
-            watermarked_audio = watermarker.apply_watermark(wav, watermark=None, sample_rate=sr)
+
+            if parsed_args.remove:
+                # Remove watermark
+                print("Removing watermark...")
+                watermarked_audio = watermarker.remove_watermark(wav, sample_rate=sr)
+            else:
+                # Apply watermark
+                print("Applying watermark...")
+                watermarked_audio = watermarker.apply_watermark(wav, watermark=None, sample_rate=sr)
             
             # Save watermarked audio
             if parsed_args.output:
                 output_path = parsed_args.output
             else:
                 base, ext = os.path.splitext(parsed_args.input_file)
-                output_path = f"{base}_watermarked{ext}"
+                if parsed_args.remove:
+                    output_path = f"{base}_cleaned{ext}"
+                else:
+                    output_path = f"{base}_watermarked{ext}"
             
             save_audio(watermarked_audio, output_path, sr)
             print(f"Watermarked audio saved to: {output_path}")
@@ -104,20 +124,20 @@ def main(args: Optional[List[str]] = None) -> int:
             extracted = watermarker.get_watermark(watermarked_audio, sample_rate=sr)
             print(f"Watermark verification confidence: {np.mean(extracted):.4f}")
             
-            # Calculate and display quality metrics
-            metrics = calculate_audio_metrics(original_audio, watermarked_audio)
-            print("\nAudio Quality Metrics:")
-            print(f"  Signal-to-Noise Ratio (SNR): {metrics['snr']:.2f} dB")
-            print(f"  Mean Squared Error (MSE): {metrics['mse']:.8f}")
-            print(f"  Peak Signal-to-Noise Ratio (PSNR): {metrics['psnr']:.2f} dB")
+        # Calculate and display quality metrics
+        metrics = calculate_audio_metrics(original_audio, watermarked_audio)
+        print("\nAudio Quality Metrics:")
+        print(f"  Signal-to-Noise Ratio (SNR): {metrics['snr']:.2f} dB")
+        print(f"  Mean Squared Error (MSE): {metrics['mse']:.8f}")
+        print(f"  Peak Signal-to-Noise Ratio (PSNR): {metrics['psnr']:.2f} dB")
             
-            # Generate visualization if requested
-            if parsed_args.visualize:
-                viz_path = os.path.splitext(output_path)[0] + "_comparison.png"
-                print(f"\nGenerating visualization to: {viz_path}")
-                plot_audio_comparison(original_audio, watermarked_audio, sr, viz_path)
+        # Generate visualization if requested
+        if parsed_args.visualize:
+            viz_path = os.path.splitext(output_path)[0] + "_comparison.png"
+            print(f"\nGenerating visualization to: {viz_path}")
+            plot_audio_comparison(original_audio, watermarked_audio, sr, viz_path)
             
-            return 0
+        return 0
             
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
