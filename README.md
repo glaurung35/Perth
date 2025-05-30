@@ -86,6 +86,7 @@ print(f"Extracted watermark: {watermark}")
 ```python
 import perth
 import librosa
+import soundfile as sf
 
 # Load the watermarked audio
 watermarked_audio, sr = librosa.load("output.wav", sr=None)
@@ -95,7 +96,6 @@ watermarker = perth.PerthImplicitWatermarker()
 
 # Remove watermark
 clean_audio = watermarker.remove_watermark(watermarked_audio, sample_rate=sr)
-print(f"Extracted watermark: {watermark}")
 
 # Save clean audio
 sf.write("clean.wav", clean_audio, sr)
